@@ -1,4 +1,4 @@
-  import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import { languageMap } from './languages.js';
 
 export async function getEmbedSu(tmdb_id, s, e) {
@@ -7,21 +7,40 @@ export async function getEmbedSu(tmdb_id, s, e) {
     'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     'Referer': DOMAIN,
     'Origin': DOMAIN,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Connection': 'keep-alive',
   };
 
   try {
     const urlSearch = s && e ? `${DOMAIN}/embed/tv/${tmdb_id}/${s}/${e}` : `${DOMAIN}/embed/movie/${tmdb_id}`;
-    const htmlSearch = await fetch(urlSearch, { method: 'GET', headers });
+    const htmlSearch = await fetch(urlSearch, { 
+      method: 'GET', 
+      headers,
+      timeout: 10000 // 10 second timeout
+    });
+
+    if (!htmlSearch.ok) {
+      throw new Error(`Failed to fetch from embed.su: ${htmlSearch.status}`);
+    }
+
     const textSearch = await htmlSearch.text();
 
     const hashEncodeMatch = textSearch.match(/JSON\.parse\(atob\(\`([^\`]+)/i);
-    const hashEncode = hashEncodeMatch ? hashEncodeMatch[1] : "";
+    if (!hashEncodeMatch) {
+      throw new Error('Could not find hash encode pattern in response');
+    }
+    const hashEncode = hashEncodeMatch[1];
 
-    if (!hashEncode) return;
+    if (!hashEncode) {
+      throw new Error('Empty hash encode value');
+    }
 
     const hashDecode = JSON.parse(await stringAtob(hashEncode));
     const mEncrypt = hashDecode.hash;
-    if (!mEncrypt) return;
+    if (!mEncrypt) {
+      throw new Error('No hash found in decoded data');
+    }
 
     const firstDecode = (await stringAtob(mEncrypt)).split(".").map(item => item.split("").reverse().join(""));
     const secondDecode = JSON.parse(await stringAtob(firstDecode.join("").split("").reverse().join("")));
@@ -80,7 +99,13 @@ export async function getEmbedSu(tmdb_id, s, e) {
       subtitles
     };
   } catch (e) {
-    return { provider: "EmbedSu", sources: [], subtitles: [] };
+    console.error('Error in getEmbedSu:', e.message);
+    return { 
+      provider: "EmbedSu", 
+      sources: [], 
+      subtitles: [],
+      error: e.message 
+    };
   }
 }
 

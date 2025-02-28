@@ -1,9 +1,12 @@
 import express from "express";
 import { getEmbedSu } from "./src/embedsu.js";
+import cors from 'cors';
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const app = express()
+
+app.use(cors()); // Allow all origins
 
 app.get('/', (req, res) => {
     res.status(200).json({
