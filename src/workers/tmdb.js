@@ -8,19 +8,31 @@ export async function getMovieFromTmdb(tmdb_id) {
         const url = `https://api.themoviedb.org/3/movie/${tmdb_id}?api_key=${apiKey}`;
         const response = await fetch(url);
         const data = await response.json();
+
+        // Check if we got an error response from TMDB
+        if (data.success === false) {
+            return new Error(data.status_message || "Movie not found");
+        }
+
+        // Check if we have the required data
+        if (!data.original_title) {
+            return new Error("Invalid movie data received");
+        }
+
         if (new Date(data.release_date) > new Date().getTime()) {
             return new Error("Media not released yet");
         }
+
         let info = {
             type: "movie",
             title: data.original_title,
             releaseYear: data.release_date ? Number(data.release_date.split("-")[0]) : null,
             tmdbId: tmdb_id,
-            imdbId: data.imdb_id
+            imdbId: data.imdb_id || null  // Make imdb_id optional
         }
         return info;
     } catch (e) {
-        return new Error("An error occurred" + e);
+        return new Error("An error occurred: " + e.message);
     }
 }
 
@@ -29,24 +41,37 @@ export async function getTvFromTmdb(tmdb_id, season, episode) {
         const url = `https://api.themoviedb.org/3/tv/${tmdb_id}/season/${season}/episode/${episode}?api_key=${apiKey}&append_to_response=external_ids`;
         const response = await fetch(url);
         const data = await response.json();
+
+        // Check if we got an error response from TMDB
+        if (data.success === false) {
+            return new Error(data.status_message || "TV episode not found");
+        }
+
         if (new Date(data.air_date) > new Date().getTime()) {
             return new Error("Not released yet");
         }
-        let secondData = await fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${apiKey}`);
-        secondData = await secondData.json();
-        let title = secondData.name;
+
+        // Fetch show details
+        const showResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${apiKey}`);
+        const showData = await showResponse.json();
+
+        // Check if show data is valid
+        if (!showData.name) {
+            return new Error("Invalid TV show data received");
+        }
+
         let info = {
             type: "tv",
-            title: title,
+            title: showData.name,
             releaseYear: data.air_date ? data.air_date.split("-")[0] : null,
             tmdbId: tmdb_id,
-            imdbId: data.external_ids.imdb_id,
+            imdbId: data.external_ids?.imdb_id || null,  // Make imdb_id optional and use optional chaining
             season: season,
             episode: episode,
-            episodeName: data.name
+            episodeName: data.name || `Episode ${episode}`
         }
         return info;
     } catch (e) {
-        return new Error("An error occurred" + e);
+        return new Error("An error occurred: " + e.message);
     }
 }
