@@ -1,12 +1,19 @@
 import dotenv from 'dotenv';
 
 dotenv.config();
-const apiKey = process.env.TMDB_API_KEY;
+const apiToken = process.env.TMDB_API_KEY;
+
+const fetchOptions = {
+    headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'application/json'
+    }
+};
 
 export async function getMovieFromTmdb(tmdb_id) {
     try {
-        const url = `https://api.themoviedb.org/3/movie/${tmdb_id}?api_key=${apiKey}`;
-        const response = await fetch(url);
+        const url = `https://api.themoviedb.org/3/movie/${tmdb_id}`;
+        const response = await fetch(url, fetchOptions);
         const data = await response.json();
 
         // Check if we got an error response from TMDB
@@ -38,8 +45,8 @@ export async function getMovieFromTmdb(tmdb_id) {
 
 export async function getTvFromTmdb(tmdb_id, season, episode) {
     try {
-        const url = `https://api.themoviedb.org/3/tv/${tmdb_id}/season/${season}/episode/${episode}?api_key=${apiKey}&append_to_response=external_ids`;
-        const response = await fetch(url);
+        const url = `https://api.themoviedb.org/3/tv/${tmdb_id}/season/${season}/episode/${episode}?append_to_response=external_ids`;
+        const response = await fetch(url, fetchOptions);
         const data = await response.json();
 
         // Check if we got an error response from TMDB
@@ -52,7 +59,7 @@ export async function getTvFromTmdb(tmdb_id, season, episode) {
         }
 
         // Fetch show details
-        const showResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${apiKey}`);
+        const showResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}`, fetchOptions);
         const showData = await showResponse.json();
 
         // Check if show data is valid
