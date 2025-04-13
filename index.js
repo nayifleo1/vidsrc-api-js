@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+// Use PORT from environment variable or fallback to 8080 for cloud platforms
 const PORT = process.env.PORT || 3000;
 const app = express();
 
