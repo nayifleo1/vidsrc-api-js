@@ -2,8 +2,12 @@ import express from "express";
 import { getMovie, getTv } from './src/api.js';
 import { getMovieFromTmdb, getTvFromTmdb } from './src/workers/tmdb.js';
 import cors from "cors";
+import dotenv from 'dotenv';
 
-const PORT = process.env.PORT;
+// Load environment variables
+dotenv.config();
+
+const PORT = process.env.PORT || 3000;
 const app = express();
 
 app.use(cors());
